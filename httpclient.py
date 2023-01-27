@@ -24,6 +24,9 @@ import re
 # you may use urllib to encode data appropriately
 import urllib.parse
 
+from parso import parse
+from zmq import PROTOCOL_ERROR_ZMTP_MALFORMED_COMMAND_UNSPECIFIED
+
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
 
@@ -70,11 +73,23 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
+        parsedURL = urllib.parse.urlparse(url)
+        host = parsedURL.netloc
+        path = parsedURL.path
+        fragments = parsedURL.fragment
+        queries = parsedURL.query
+        content_type = 'application/x-www-form-urlencoded'
+        body = "Post {path} HTTP/1.1 \r\n"
+        body += "HOST: {host} \r\n"
+        body += "Content-Type: {content_type} \r\n\r\n"
+
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
