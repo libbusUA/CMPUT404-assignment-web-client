@@ -73,6 +73,24 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+        
+        parsedURL = urllib.parse.urlparse(url)
+        host = parsedURL.hostname
+        path = parsedURL.path
+        port = parsedURL.port
+        request = "GET "+  path +  " HTTP/1.1\r\nHost:" + host + "\n\n"
+        
+        if port != None:
+            self.connect(host, port)
+        else:
+            self.connect(host, 80)
+        
+        self.sendall(request)
+        
+        body = self.recvall(self.socket)
+        code = int(body.split()[1])
+
+        self.close()
 
 
         return HTTPResponse(code, body)
@@ -80,16 +98,45 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         code = 500
         body = ""
+        request = "POST "
         parsedURL = urllib.parse.urlparse(url)
-        host = parsedURL.netloc
+        host = parsedURL.hostname
+        port = parsedURL.port
         path = parsedURL.path
-        fragments = parsedURL.fragment
-        queries = parsedURL.query
         content_type = 'application/x-www-form-urlencoded'
-        body = "Post {path} HTTP/1.1 \r\n"
-        body += "HOST: {host} \r\n"
-        body += "Content-Type: {content_type} \r\n\r\n"
+        userAgent = "almostcURL/1.0"
+       
+        request += path + " HTTP/1.1\r\n"
+        request += "HOST: " +  host + " \r\n"
+        request += "User-Agent: " +  userAgent + " \r\n"
+        request += "Content-Type: " +  content_type + " \r\n\r\n"
+        # send a content length in here. 
+        if args != None:
+            i = 0
+            for key in args:
+                
+                if i > 0:
 
+                    request = request + "&" + key + "=" + args[key]
+                else:
+                    request = request + key + "=" + args[key]
+                i +=1
+
+
+
+        if port != None:
+            self.connect(host, port)
+        else:
+            self.connect(host, 80)
+        
+        self.sendall(request)
+        body = self.recvall(self.socket)
+        code = int(body.split()[1])
+        self.close()
+
+        #You are not completing the body of your request. Something is wrong here and HTTP is waiting too long.
+        #All post requests should have a content length header. 
+        #
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
